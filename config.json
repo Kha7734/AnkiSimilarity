@@ -1,6 +1,6 @@
 {
     "mongodb": {
-        "uri": "mongodb+srv://huynhsikha2003:ijMnOdNfJBHp5azz@cluster0.yjljdcq.mongodb.net/",
+        "uri": "mongodb+srv://huynhsikha2003:<db_password>@cluster0.yjljdcq.mongodb.net/",
         "database": "AnkiSimilarity"
     }
 }
