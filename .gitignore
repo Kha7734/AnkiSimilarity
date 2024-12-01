@@ -1,0 +1,6 @@
+venv/*
+StyleTTS2/*
+.idea/*
+.idea
+
+constant.py

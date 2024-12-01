@@ -1,0 +1,6 @@
+transformers
+librosa
+pymongo
+torch
+Flask
+dnspython
