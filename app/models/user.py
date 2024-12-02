@@ -1,6 +1,6 @@
+# models/user.py
 import hashlib
 from datetime import datetime
-# from app.databases.db import db  # Assuming you have a database connection set up
 from flask import current_app
 
 class User:
