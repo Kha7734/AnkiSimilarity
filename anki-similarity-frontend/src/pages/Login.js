@@ -1,74 +1,84 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { TextField, Button, Container, Typography, Box, Link } from '@mui/material';
-
-const API_URL = process.env.REACT_APP_API_URL;
+import { loginUser } from '../services/api'; // Import the login function
+import { useNavigate, Link } from 'react-router-dom'; // Thêm Link từ react-router-dom
+import { TextField, Button, Typography, Box, Container, Paper } from '@mui/material'; // Import Material-UI components
+import { useAuth} from "../AuthContext";
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth(); // Use the login function from AuthContext
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault(); // Prevent form submission
     try {
-      const response = await axios.post(`${API_URL}/login`, {
-        username,
-        password,
-      });
-      console.log('Login successful:', response.data);
-      localStorage.setItem('token', response.data.token); // Save token
-      navigate('/dashboard'); // Redirect to dashboard
+      const response = await loginUser(username, password);
+      login(response.user); // Store the logged-in user in the context
+      console.log('Login successful:', response);
+      navigate('/dashboard'); // Redirect to dashboard after successful login
     } catch (error) {
-      console.error('Login failed:', error);
+      setError('Login failed. Please check your credentials.');
+      console.error('Login error:', error);
     }
   };
 
   return (
     <Container maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          Login
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+      <Paper elevation={3} sx={{ padding: 4, marginTop: 8 }}>
+        <Box
+          component="form"
+          onSubmit={handleLogin}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+          }}
+        >
+          <Typography variant="h4" align="center" gutterBottom>
+            Login
+          </Typography>
+          {error && (
+            <Typography color="error" align="center">
+              {error}
+            </Typography>
+          )}
           <TextField
-            margin="normal"
-            required
-            fullWidth
             label="Username"
+            variant="outlined"
+            fullWidth
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            required
           />
           <TextField
-            margin="normal"
-            required
-            fullWidth
             label="Password"
             type="password"
+            variant="outlined"
+            fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
           <Button
             type="submit"
-            fullWidth
             variant="contained"
-            sx={{ mt: 3, mb: 2 }}
+            color="primary"
+            fullWidth
+            size="large"
           >
             Login
           </Button>
-          <Link href="/register" variant="body2">
-            Don't have an account? Register
-          </Link>
+          {/* Insert link to register */}
+          <Typography align="center" sx={{ marginTop: 2 }}>
+            Don't have an account?{' '}
+            <Link to="/register" style={{ textDecoration: 'none', color: 'blueviolet' }}>
+              Register here
+            </Link>
+          </Typography>
         </Box>
-      </Box>
+      </Paper>
     </Container>
   );
 };

@@ -1,84 +1,84 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { TextField, Button, Container, Typography, Box, Link } from '@mui/material';
-
-const API_URL = process.env.REACT_APP_API_URL;
+import { registerUser } from '../services/api'; // Import the register function
+import { useNavigate } from 'react-router-dom'; // For navigation after registration
+import { TextField, Button, Typography, Box, Container, Paper } from '@mui/material'; // Import Material-UI components
 
 const Register = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleRegister = async (e) => {
+    e.preventDefault(); // Prevent form submission
     try {
-      const response = await axios.post(`${API_URL}/register`, {
-        username,
-        email,
-        password,
-      });
-      console.log('Registration successful:', response.data);
-      navigate('/login'); // Redirect to login page
+      const response = await registerUser(username, email, password);
+      console.log('Registration successful:', response);
+      navigate('/login'); // Redirect to log in after successful registration
     } catch (error) {
-      console.error('Registration failed:', error);
+      setError('Registration failed. Please try again.');
+      console.error('Registration error:', error);
     }
   };
 
   return (
     <Container maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          Register
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+      <Paper elevation={3} sx={{ padding: 4, marginTop: 8 }}>
+        <Box
+          component="form"
+          onSubmit={handleRegister}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+          }}
+        >
+          <Typography variant="h4" align="center" gutterBottom>
+            Register
+          </Typography>
+          {error && (
+            <Typography color="error" align="center">
+              {error}
+            </Typography>
+          )}
           <TextField
-            margin="normal"
-            required
-            fullWidth
             label="Username"
+            variant="outlined"
+            fullWidth
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            required
           />
           <TextField
-            margin="normal"
-            required
-            fullWidth
             label="Email"
             type="email"
+            variant="outlined"
+            fullWidth
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
           <TextField
-            margin="normal"
-            required
-            fullWidth
             label="Password"
             type="password"
+            variant="outlined"
+            fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
           <Button
             type="submit"
-            fullWidth
             variant="contained"
-            sx={{ mt: 3, mb: 2 }}
+            color="primary"
+            fullWidth
+            size="large"
           >
             Register
           </Button>
-          <Link href="/login" variant="body2">
-            Already have an account? Login
-          </Link>
         </Box>
-      </Box>
+      </Paper>
     </Container>
   );
 };

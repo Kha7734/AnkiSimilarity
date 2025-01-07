@@ -19,6 +19,10 @@ class User:
 
         # Save to database
         current_app.db.users.insert_one(new_user.__dict__)
+        # Update user_id with the generated ObjectId and convert it to a string
+        new_user.user_id = str(new_user._id)
+        current_app.db.users.update_one({"_id": new_user._id}, {"$set": {"user_id": new_user.user_id}})
+
         return new_user
 
     @staticmethod

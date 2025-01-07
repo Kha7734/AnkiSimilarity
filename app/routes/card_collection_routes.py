@@ -69,3 +69,4 @@ def get_user_cards(user_id):
 def get_dataset_cards(dataset_id):
     cards = VocabularyCard.get_cards_by_dataset(dataset_id)
     return jsonify(cards), 200
+

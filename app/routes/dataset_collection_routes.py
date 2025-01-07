@@ -39,6 +39,17 @@ def get_dataset(dataset_id):
         }), 200
     return jsonify({'message': 'Dataset not found'}), 404
 
+@dataset_bp.route('/datasets', methods=['GET'])
+def get_all_datasets():
+    user_id = request.args.get('user_id')  # Get user_id from query parameters
+    if not user_id:
+        return jsonify({'message': 'user_id is required'}), 400
+
+    datasets = list(current_app.db.datasets.find({"user_id": user_id}))  # Fetch datasets for the user
+    for dataset in datasets:
+        dataset['_id'] = str(dataset['_id'])  # Convert ObjectId to string
+    return jsonify(datasets), 200
+
 @dataset_bp.route('/datasets/<dataset_id>', methods=['PUT'])
 def update_dataset(dataset_id):
     data = request.json

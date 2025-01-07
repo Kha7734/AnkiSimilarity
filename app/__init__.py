@@ -1,7 +1,10 @@
-from flask import Flask, jsonify
-from app.databases.db import get_db, get_test_db, close_db
 import json
+import os
+import logging
+from flask import Flask
+from flask_cors import CORS
 from bson import ObjectId
+from app.databases.db import get_db, get_test_db, close_db
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -11,37 +14,72 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 def create_app(env='development'):
     app = Flask(__name__)
+    CORS(app, resources={r"/*": {"origins": "*"}})
+
+    # Configure logging
+    logging.basicConfig(level=logging.DEBUG if env == 'development' else logging.INFO)
+    app.logger.info(f"Starting app in '{env}' environment.")
 
     # Load configuration from config.json
-    with open('config.json', 'r') as config_file:
-        config = json.load(config_file)
+    config_path = 'config.json'
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Configuration file '{config_path}' not found.")
 
-    # Update the configuration with values from the JSON file
+    try:
+        with open(config_path, 'r') as config_file:
+            config = json.load(config_file)
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON in configuration file '{config_path}'.")
+
+    # Load environment-specific configuration
+    env_config_path = f'config_{env}.json'
+    if os.path.exists(env_config_path):
+        with open(env_config_path, 'r') as env_config_file:
+            env_config = json.load(env_config_file)
+        config.update(env_config)
+
     app.config.update(config)
 
-    # Use a different database for testing
+    # Set up database connection
     if env == 'testing':
         app.db = get_test_db()  # Use the test database
     else:
         app.db = get_db()  # Use the main database
 
-    app.json_encoder = CustomJSONEncoder  # Set the custom encoder
+    # Test database connection
+    try:
+        app.db.command('ping')  # Test MongoDB connection
+        app.logger.info("Database connection successful.")
+    except Exception as e:
+        app.logger.error(f"Database connection failed: {e}")
+        raise
 
-    # Register blueprints (routes)
-    from app.routes.user_routes import user_bp
-    from app.routes.card_collection_routes import vocab_bp  # Import vocabulary card routes
-    from app.routes.user_progress_routes import progress_bp
-    from app.routes.dataset_collection_routes import dataset_bp
-    from app.routes.user_setting_routes import settings_bp
-    app.register_blueprint(user_bp)
-    app.register_blueprint(vocab_bp)  # Register the vocabulary card blueprint
-    app.register_blueprint(progress_bp)
-    app.register_blueprint(dataset_bp)
-    app.register_blueprint(settings_bp)
+    # Set custom JSON encoder
+    app.json_encoder = CustomJSONEncoder
+
+    # Register blueprints
+    blueprints = [
+        ('app.routes.user_routes', 'user_bp'),
+        ('app.routes.card_collection_routes', 'vocab_bp'),
+        ('app.routes.user_progress_routes', 'progress_bp'),
+        ('app.routes.dataset_collection_routes', 'dataset_bp'),
+        ('app.routes.user_setting_routes', 'settings_bp'),
+    ]
+
+    for module_name, blueprint_name in blueprints:
+        try:
+            module = __import__(module_name, fromlist=[blueprint_name])
+            blueprint = getattr(module, blueprint_name)
+            app.register_blueprint(blueprint)
+            app.logger.info(f"Registered blueprint: {blueprint_name}")
+        except ImportError as e:
+            app.logger.error(f"Failed to import blueprint '{blueprint_name}': {e}")
+        except AttributeError as e:
+            app.logger.error(f"Blueprint '{blueprint_name}' not found in module '{module_name}': {e}")
 
     # Ensure the database connection is closed when the app shuts down
-    @app.teardown_appcontext
-    def teardown_db(exception):
-        close_db()
+    # @app.teardown_appcontext
+    # def teardown_db(exception):
+    #     close_db()
 
     return app
