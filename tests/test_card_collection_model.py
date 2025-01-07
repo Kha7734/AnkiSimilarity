@@ -1,132 +1,212 @@
-# # tests/test_card_collection_model.py
-#
-# import unittest
-# from app import create_app
-# # from app.models.card_collection import VocabularyCard  # Import your VocabularyCard model
-# # from app.databases.db import db  # Ensure you have access to your database connection
-# from flask import current_app
-#
-# class TestVocabularyCardModel(unittest.TestCase):
-#
-#     def setUp(self):
-#         self.app = create_app()
-#         self.app_context = self.app.app_context()  # Create an application context
-#         self.app_context.push()  # Push the application context
-#
-#         # Set up a test vocabulary card in the database before each test
-#         self.test_card_data = {
-#             "user_id": "test_user_id",
-#             "dataset_id": "test_dataset_id",
-#             "word": "testword",
-#             "meaning_en": "a test word",
-#             "meaning_vi": "một từ thử nghiệm",
-#             "ipa_transcription": "/tɛstwɜrd/",
-#             "example_sentences_en": ["This is a test sentence.", "Another example of a test."],
-#             "example_sentences_vi": ["Đây là một câu thử nghiệm.", "Một ví dụ khác về thử nghiệm."],
-#             "visual_image_url": "http://example.com/image.jpg",
-#             "audio_url_en": "http://example.com/audio_en.mp3",
-#             "audio_url_vi": "http://example.com/audio_vi.mp3"
-#         }
-#
-#         # Create the test card and store its ID for later use
-#         self.card = VocabularyCard.create_card(**self.test_card_data)
-#
-#     def tearDown(self):
-#         # Clean up after each test by deleting the test card using its card ID
-#         VocabularyCard.delete_card(self.card.card_id)  # Use the card ID of the created card
-#         self.app_context.pop()  # Pop the application context
-#
-#     def test_create_card(self):
-#         card = VocabularyCard.get_card_by_id({"card_id": self.card.card_id})
-#         self.assertIsNotNone(card)
-#         self.assertEqual(card['meaning_en'], self.test_card_data['meaning_en'])
-#
-#     def test_update_card(self):
-#         update_data = {"meaning_en": "updated meaning"}
-#         db.vocabulary_cards.update_card(self.card.card_id, update_data)
-#
-#         updated_card = VocabularyCard.get_card_by_id(self.card.card_id)
-#         self.assertEqual(updated_card['meaning_en'], update_data['meaning_en'])
-#
-#     def test_delete_card(self):
-#         VocabularyCard.delete_card(self.card.card_id)
-#         # deleted_card = db.vocabulary_cards.find_one({"word": self.test_card_data["word"]})
-#         deleted_card = VocabularyCard.get_card_by_id(self.card.card_id)
-#         self.assertIsNone(deleted_card)
-#
-#
-# if __name__ == '__main__':
-#     unittest.main()
-
 import unittest
-from flask import json, current_app
+from datetime import datetime
+from bson import ObjectId
+
+from app.databases.db import close_db
+from app.models.card_collection import VocabularyCard
 from app import create_app
-from app.models.card_collection import VocabularyCard  # Import your VocabularyCard model
-
-
 
 class TestVocabularyCardModel(unittest.TestCase):
-
     def setUp(self):
-        self.app = create_app()
-        self.app_context = self.app.app_context()  # Create an application context
-        self.app_context.push()  # Push the application context
-        self.client = self.app.test_client()  # Create a test client
+        # Create the Flask app with the testing environment
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
 
-        # Set up a test vocabulary card in the database before each test
-        self.test_card_data = {
-            "user_id": "test_user_id",
-            "dataset_id": "test_dataset_id",
-            "word": "testword",
-            "meaning_en": "a test word",
-            "meaning_vi": "một từ thử nghiệm",
-            "ipa_transcription": "/tɛstwɜrd/",
-            "example_sentences_en": ["This is a test sentence.", "Another example of a test."],
-            "example_sentences_vi": ["Đây là một câu thử nghiệm.", "Một ví dụ khác về thử nghiệm."],
-            "visual_image_url": "http://example.com/image.jpg",
-            "audio_url_en": "http://example.com/audio_en.mp3",
-            "audio_url_vi": "http://example.com/audio_vi.mp3"
-        }
+        # Initialize the test database
+        self.test_db = self.app.db
 
-        # Create the test card and store its ID for later use
-        self.card = VocabularyCard.create_card(**self.test_card_data)
+        # Clear collections in the test database
+        self.test_db.vocabulary_cards.delete_many({})
+
+        # Initialize test data
+        self.user_id = ObjectId()
+        self.dataset_id = ObjectId()
 
     def tearDown(self):
-        # Clean up after each test by deleting the test card using its card ID
-        VocabularyCard.delete_card(self.card.card_id)  # Use the card ID of the created card
-        self.app_context.pop()  # Pop the application context
+        # Clear collections in the test database
+        self.test_db.vocabulary_cards.delete_many({})
+
+        close_db()
+
+        # Pop the app context
+        self.app_context.pop()
 
     def test_create_card(self):
-        card = current_app.db.vocabulary_cards.find_one({"word": self.test_card_data["word"]})
-        self.assertIsNotNone(card)
-        self.assertEqual(card['meaning_en'], self.test_card_data['meaning_en'])
+        # Create a new vocabulary card
+        card = VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="apple",
+            meaning_en="A fruit",
+            meaning_vi="Một loại trái cây",
+            ipa_transcription="/ˈæp.əl/",
+            example_sentences_en=["I ate an apple."],
+            example_sentences_vi=["Tôi đã ăn một quả táo."],
+            visual_image_url="http://example.com/apple.jpg",
+            audio_url_en="http://example.com/apple_en.mp3",
+            audio_url_vi="http://example.com/apple_vi.mp3"
+        )
+
+        # Check if the card was created successfully
+        self.assertIsNotNone(card.card_id)
+        self.assertEqual(card.user_id, self.user_id)
+        self.assertEqual(card.dataset_id, self.dataset_id)
+        self.assertEqual(card.word, "apple")
+        self.assertEqual(card.meaning_en, "A fruit")
+        self.assertEqual(card.meaning_vi, "Một loại trái cây")
+        self.assertEqual(card.ipa_transcription, "/ˈæp.əl/")
+        self.assertEqual(card.example_sentences_en, ["I ate an apple."])
+        self.assertEqual(card.example_sentences_vi, ["Tôi đã ăn một quả táo."])
+        self.assertEqual(card.visual_image_url, "http://example.com/apple.jpg")
+        self.assertEqual(card.audio_url_en, "http://example.com/apple_en.mp3")
+        self.assertEqual(card.audio_url_vi, "http://example.com/apple_vi.mp3")
+        self.assertIsInstance(card.created_at, datetime)
+        self.assertIsInstance(card.updated_at, datetime)
+
+    def test_get_card_by_id(self):
+        # Create a card first
+        card = VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="apple",
+            meaning_en="A fruit",
+            meaning_vi="Một loại trái cây",
+            ipa_transcription="/ˈæp.əl/",
+            example_sentences_en=["I ate an apple."],
+            example_sentences_vi=["Tôi đã ăn một quả táo."],
+            visual_image_url="http://example.com/apple.jpg",
+            audio_url_en="http://example.com/apple_en.mp3",
+            audio_url_vi="http://example.com/apple_vi.mp3"
+        )
+
+        # Retrieve the card by ID
+        retrieved_card = VocabularyCard.get_card_by_id(card.card_id)
+        self.assertIsNotNone(retrieved_card)
+        self.assertEqual(retrieved_card['word'], "apple")
 
     def test_update_card(self):
-        update_data = {"meaning_en": "updated meaning"}
+        # Create a card first
+        card = VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="apple",
+            meaning_en="A fruit",
+            meaning_vi="Một loại trái cây",
+            ipa_transcription="/ˈæp.əl/",
+            example_sentences_en=["I ate an apple."],
+            example_sentences_vi=["Tôi đã ăn một quả táo."],
+            visual_image_url="http://example.com/apple.jpg",
+            audio_url_en="http://example.com/apple_en.mp3",
+            audio_url_vi="http://example.com/apple_vi.mp3"
+        )
 
-        # Update the card using its ID from setup
-        response = self.client.put(f'/cards/{self.card.card_id}', json=update_data)
-
-        # Ensure the update request was successful
-        self.assertEqual(response.status_code, 200,
-                         msg=f"Expected status code 200 but got {response.status_code}. Response data: {response.data.decode()}")
+        # Update the card
+        update_fields = {
+            "word": "banana",
+            "meaning_en": "Another fruit",
+            "meaning_vi": "Một loại trái cây khác"
+        }
+        VocabularyCard.update_card(card.card_id, update_fields)
 
         # Retrieve the updated card
-        updated_card = current_app.db.vocabulary_cards.find_one({"card_id": self.card.card_id})
-
-        # Check if updated_card is not None before accessing its fields
-        self.assertIsNotNone(updated_card, msg="Updated card should not be None after update.")
-
-        # Now check if the meaning was updated correctly
-        self.assertEqual(updated_card['meaning_en'], update_data['meaning_en'],
-                         msg=f"Expected meaning_en to be '{update_data['meaning_en']}' but got '{updated_card['meaning_en']}'")
+        updated_card = VocabularyCard.get_card_by_id(card.card_id)
+        self.assertEqual(updated_card['word'], "banana")
+        self.assertEqual(updated_card['meaning_en'], "Another fruit")
+        self.assertEqual(updated_card['meaning_vi'], "Một loại trái cây khác")
 
     def test_delete_card(self):
-        VocabularyCard.delete_card(self.card.card_id)
+        # Create a card first
+        card = VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="apple",
+            meaning_en="A fruit",
+            meaning_vi="Một loại trái cây",
+            ipa_transcription="/ˈæp.əl/",
+            example_sentences_en=["I ate an apple."],
+            example_sentences_vi=["Tôi đã ăn một quả táo."],
+            visual_image_url="http://example.com/apple.jpg",
+            audio_url_en="http://example.com/apple_en.mp3",
+            audio_url_vi="http://example.com/apple_vi.mp3"
+        )
 
-        deleted_card = current_app.db.vocabulary_cards.find_one({"card_id": self.card.card_id})
+        # Delete the card
+        VocabularyCard.delete_card(card.card_id)
+
+        # Verify the card is deleted
+        deleted_card = VocabularyCard.get_card_by_id(card.card_id)
         self.assertIsNone(deleted_card)
 
+    def test_get_cards_by_user(self):
+        # Create two cards for the same user
+        VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="apple",
+            meaning_en="A fruit",
+            meaning_vi="Một loại trái cây",
+            ipa_transcription="/ˈæp.əl/",
+            example_sentences_en=["I ate an apple."],
+            example_sentences_vi=["Tôi đã ăn một quả táo."],
+            visual_image_url="http://example.com/apple.jpg",
+            audio_url_en="http://example.com/apple_en.mp3",
+            audio_url_vi="http://example.com/apple_vi.mp3"
+        )
+        VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="banana",
+            meaning_en="Another fruit",
+            meaning_vi="Một loại trái cây khác",
+            ipa_transcription="/bəˈnɑː.nə/",
+            example_sentences_en=["I like bananas."],
+            example_sentences_vi=["Tôi thích chuối."],
+            visual_image_url="http://example.com/banana.jpg",
+            audio_url_en="http://example.com/banana_en.mp3",
+            audio_url_vi="http://example.com/banana_vi.mp3"
+        )
+
+        # Retrieve cards by user ID
+        cards = VocabularyCard.get_cards_by_user(self.user_id)
+        self.assertEqual(len(cards), 2)
+        self.assertEqual(cards[0]['word'], "apple")
+        self.assertEqual(cards[1]['word'], "banana")
+
+    def test_get_cards_by_dataset(self):
+        # Create two cards for the same dataset
+        VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="apple",
+            meaning_en="A fruit",
+            meaning_vi="Một loại trái cây",
+            ipa_transcription="/ˈæp.əl/",
+            example_sentences_en=["I ate an apple."],
+            example_sentences_vi=["Tôi đã ăn một quả táo."],
+            visual_image_url="http://example.com/apple.jpg",
+            audio_url_en="http://example.com/apple_en.mp3",
+            audio_url_vi="http://example.com/apple_vi.mp3"
+        )
+        VocabularyCard.create_card(
+            user_id=self.user_id,
+            dataset_id=self.dataset_id,
+            word="banana",
+            meaning_en="Another fruit",
+            meaning_vi="Một loại trái cây khác",
+            ipa_transcription="/bəˈnɑː.nə/",
+            example_sentences_en=["I like bananas."],
+            example_sentences_vi=["Tôi thích chuối."],
+            visual_image_url="http://example.com/banana.jpg",
+            audio_url_en="http://example.com/banana_en.mp3",
+            audio_url_vi="http://example.com/banana_vi.mp3"
+        )
+
+        # Retrieve cards by dataset ID
+        cards = VocabularyCard.get_cards_by_dataset(self.dataset_id)
+        self.assertEqual(len(cards), 2)
+        self.assertEqual(cards[0]['word'], "apple")
+        self.assertEqual(cards[1]['word'], "banana")
 
 if __name__ == '__main__':
     unittest.main()

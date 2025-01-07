@@ -1,8 +1,6 @@
 # routes/user_routes.py
-
 from flask import Blueprint, request, jsonify, current_app
 from app.models.user import User
-# from app.databases.db import db
 import hashlib
 user_bp = Blueprint('user', __name__)
 

@@ -1,13 +1,15 @@
 # tests/test_user_model.py
 
 import unittest
+
+from app.databases.db import close_db
 from app.models.user import User
 from flask import current_app
 from app import create_app
 
 class TestUserModel(unittest.TestCase):
     def setUp(self):
-        self.app = create_app()
+        self.app = create_app('testing')
         self.app_context = self.app.app_context()  # Create an application context
         self.app_context.push()  # Push the application context
 
@@ -20,6 +22,8 @@ class TestUserModel(unittest.TestCase):
     def tearDown(self):
         # Clean up after each test by deleting the test user
         User.delete_user(self.user.user_id)  # Use the user ID of the created user
+
+        close_db()  # Close the database connection
         self.app_context.pop()  # Pop the application context
 
     def test_create_user(self):

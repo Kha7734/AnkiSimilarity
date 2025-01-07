@@ -1,6 +1,8 @@
 {
-    "mongodb": {
-        "uri": "mongodb+srv://huynhsikha2003:<db_password>@cluster0.yjljdcq.mongodb.net/",
-        "database": "AnkiSimilarity"
-    }
+  "mongodb": {
+    "uri": "mongodb+srv://huynhsikha2003:<db_password>@cluster0.yjljdcq.mongodb.net/",
+    "database": "AnkiSimilarity",
+    "test_uri": "mongodb+srv://huynhsikha2003:<db_password>@cluster0.yjljdcq.mongodb.net/test_db?retryWrites=true&w=majority",
+    "test_database": "test_db"
+  }
 }
