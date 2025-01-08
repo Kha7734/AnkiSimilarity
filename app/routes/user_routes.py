@@ -1,8 +1,12 @@
 # routes/user_routes.py
 from flask import Blueprint, request, jsonify, current_app
+import jwt
+from datetime import datetime, timedelta
 from app.models.user import User
 import hashlib
+
 user_bp = Blueprint('user', __name__)
+
 
 @user_bp.route('/register', methods=['POST'])
 def register():
@@ -19,11 +23,55 @@ def register():
 @user_bp.route('/login', methods=['POST'])
 def login():
     data = request.json
-    if User.validate_user(data['username'], data['password']):
-        user = current_app.db.users.find_one({"username": data['username']})
+    user = User.validate_user(data['username'], data['password'])
+    if user:
         User.set_last_login(user['user_id'])
-        return jsonify({'message': 'Login successful'}), 200
+
+        # Generate a JWT token
+        token = User.generate_token(user['user_id'], user['username'])
+
+        user_data = {
+            '_id': str(user['_id']),
+            'user_id': user['user_id'],
+            'username': user['username'],
+            'email': user['email'],
+            'created_at': user['created_at'],
+            'last_login': user.get('last_login')
+        }
+
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'data': user_data
+        }), 200
     return jsonify({'message': 'Invalid username or password'}), 401
+
+
+@user_bp.route('/validate-token', methods=['POST'])
+def validate_token():
+    token = request.json.get('token')
+    if not token:
+        return jsonify({'message': 'Token is missing'}), 400
+
+    try:
+        # Decode the token using the secret key
+        secret_key = current_app.config['SECRET_KEY']
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+
+        # Fetch user data from the database
+        user = User.get_user_by_id(payload['user_id'])
+        if user:
+            return jsonify({
+                'message': 'Token is valid',
+                'user_id': user['user_id'],
+                'username': user['username']
+            }), 200
+        else:
+            return jsonify({'message': 'User not found'}), 404
+    except jwt.ExpiredSignatureError:
+        return jsonify({'message': 'Token has expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'message': 'Invalid token'}), 401
 
 
 @user_bp.route('/user/<user_id>', methods=['GET'])

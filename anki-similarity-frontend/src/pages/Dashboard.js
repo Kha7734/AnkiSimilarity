@@ -12,29 +12,25 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { Link } from "react-router-dom";
-import Header from "../components/Header";
+import Header from "../components/Header"; // Ensure Header is imported
 import Sidebar from "../components/Sidebar";
-import { useAuth } from "../AuthContext"; // Import useAuth
+import { useAuth } from "../AuthContext";
 
 const Dashboard = () => {
   const [progress, setProgress] = useState(0);
   const [recentActivity, setRecentActivity] = useState([]);
   const [datasets, setDatasets] = useState([]);
-  const [userProgress, setUserProgress] = useState([]); // Add state for user progress
-  const { user } = useAuth(); // Get the authenticated user from context
+  const [userProgress, setUserProgress] = useState([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return; // Ensure the user is authenticated
+      if (!user) return;
 
       try {
-        // Fetch progress data for the authenticated user
-        const progressResponse = await axios.get("/api/progress", {
-          params: { user_id: user._id }, // Use the user ID from context
-        });
+        const progressResponse = await axios.get(`/api/progress/user/${user._id}`);
         setUserProgress(progressResponse.data);
 
-        // Calculate overall progress
         const totalCards = progressResponse.data.length;
         const completedCards = progressResponse.data.filter(
           (p) => p.status === "completed"
@@ -42,29 +38,27 @@ const Dashboard = () => {
         const progressPercentage = totalCards > 0 ? (completedCards / totalCards) * 100 : 0;
         setProgress(progressPercentage);
 
-        // Fetch recent activity
-        const activityResponse = await axios.get("/vocabulary/recent", {
-          params: { user_id: user._id }, // Use the user ID from context
-        });
-        setRecentActivity(activityResponse.data);
-
-        // Fetch datasets for the authenticated user
-        const datasetsResponse = await axios.get("/datasets", {
-          params: { user_id: user._id }, // Use the user ID from context
-        });
-        setDatasets(datasetsResponse.data);
+        // const activityResponse = await axios.get("/vocabulary/recent", {
+        //   params: { user_id: user.user_id },
+        // });
+        // setRecentActivity(activityResponse.data);
+        //
+        // const datasetsResponse = await axios.get("/datasets", {
+        //   params: { user_id: user.user_id },
+        // });
+        // setDatasets(datasetsResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
 
     fetchData();
-  }, [user]); // Re-fetch data when the user changes
+  }, [user]);
 
   return (
     <div>
       <Header /> {/* Include Header */}
-      <Sidebar /> {/* Include Sidebar */}
+      <Sidebar />
       <Container sx={{ marginLeft: "240px", marginTop: "64px", padding: "12px" }}>
         <Typography variant="h4" gutterBottom>
           Dashboard

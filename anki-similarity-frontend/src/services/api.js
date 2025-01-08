@@ -9,6 +9,10 @@ export const registerUser = async (username, email, password) => {
       username,
       email,
       password,
+    }, {
+      headers: {
+        'Content-Type': 'Authorization/json', // Set the content type header to JSON
+      },
     });
     return response.data; // Return the response from the backend
   } catch (error) {
@@ -17,17 +21,14 @@ export const registerUser = async (username, email, password) => {
   }
 };
 
+// Function to log in a user
 export const loginUser = async (username, password) => {
   try {
     const response = await axios.post(`${API_URL}/login`, {
       username,
       password,
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
-    return response.data; // Trả về phản hồi từ back-end
+    return response;
   } catch (error) {
     console.error('Login failed:', error.response?.data || error.message);
     throw error;
@@ -235,6 +236,41 @@ export const deleteProgress = async (progressId) => {
     await axios.delete(`${API_URL}/api/progress/${progressId}`);
   } catch (error) {
     console.error("Error deleting progress:", error);
+    throw error;
+  }
+};
+
+// Fetch settings for a user
+export const fetchUserSettings = async (userId) => {
+  try {
+    const response = await axios.get(`${API_URL}/settings/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user settings:", error);
+    throw error;
+  }
+};
+
+// Create or update user settings
+export const updateUserSettings = async (
+  userId,
+  language_preference,
+  daily_goal,
+  notification_enabled,
+  notification_time,
+  theme
+) => {
+  try {
+    const response = await axios.put(`${API_URL}/settings/${userId}`, {
+      language_preference,
+      daily_goal,
+      notification_enabled,
+      notification_time,
+      theme,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user settings:", error);
     throw error;
   }
 };

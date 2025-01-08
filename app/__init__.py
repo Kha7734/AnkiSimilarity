@@ -14,10 +14,15 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 def create_app(env='development'):
     app = Flask(__name__)
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    # CORS(app, supports_credentials=True,  origins='*', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    cors = CORS()
+    app_v1_cors = {
+        "origins": ["http://localhost:3000", "http://localhost:5000"],
+    }
+    cors.init_app(app, resources={r"/*": app_v1_cors}, supports_credentials=True)
 
     # Configure logging
-    logging.basicConfig(level=logging.DEBUG if env == 'development' else logging.INFO)
+    # logging.basicConfig(level=logging.DEBUG if env == 'development' else logging.INFO)
     app.logger.info(f"Starting app in '{env}' environment.")
 
     # Load configuration from config.json

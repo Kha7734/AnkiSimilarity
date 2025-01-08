@@ -4,5 +4,6 @@
     "database": "AnkiSimilarity",
     "test_uri": "mongodb+srv://huynhsikha2003:<db_password>@cluster0.yjljdcq.mongodb.net/test_db?retryWrites=true&w=majority",
     "test_database": "test_db"
-  }
+  },
+  "SECRET_KEY": "THIS_IS_MY_ANKI_SIMILARITY_SECRET_KEY"
 }

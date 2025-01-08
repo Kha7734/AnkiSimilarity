@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { loginUser } from '../services/api'; // Import the login function
-import { useNavigate, Link } from 'react-router-dom'; // Thêm Link từ react-router-dom
-import { TextField, Button, Typography, Box, Container, Paper } from '@mui/material'; // Import Material-UI components
-import { useAuth} from "../AuthContext";
+import { useNavigate, Link } from 'react-router-dom';
+import { TextField, Button, Typography, Box, Container, Paper } from '@mui/material';
+import { useAuth } from '../AuthContext'; // Import useAuth from AuthContext
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -14,9 +13,8 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault(); // Prevent form submission
     try {
-      const response = await loginUser(username, password);
-      login(response.user); // Store the logged-in user in the context
-      console.log('Login successful:', response);
+      await login(username, password); // Use the login function from AuthContext
+      console.log('Login successful');
       navigate('/dashboard'); // Redirect to dashboard after successful login
     } catch (error) {
       setError('Login failed. Please check your credentials.');
@@ -70,7 +68,6 @@ const Login = () => {
           >
             Login
           </Button>
-          {/* Insert link to register */}
           <Typography align="center" sx={{ marginTop: 2 }}>
             Don't have an account?{' '}
             <Link to="/register" style={{ textDecoration: 'none', color: 'blueviolet' }}>

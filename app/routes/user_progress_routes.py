@@ -81,3 +81,24 @@ def delete_progress(progress_id):
     if result.deleted_count > 0:
         return jsonify({'message': 'Progress deleted successfully'}), 200
     return jsonify({'message': 'Progress not found'}), 404
+
+@progress_bp.route('/api/progress/user/<user_id>', methods=['GET'])
+def get_progress_by_user(user_id):
+    progress_entries = current_app.db.user_progress.find({"user_id": user_id})  # Fetch all progress entries for the user
+    progress_list = []
+    for progress in progress_entries:
+        progress_list.append({
+            'progress_id': str(progress['_id']),
+            'user_id': str(progress['user_id']),
+            'card_id': str(progress['card_id']),
+            'dataset_id': str(progress['dataset_id']),
+            'status': progress['status'],
+            'last_reviewed': progress.get('last_reviewed'),
+            'next_review': progress.get('next_review'),
+            'streak': progress['streak'],
+            'ease_factor': progress['ease_factor'],
+            'interval': progress['interval'],
+            'created_at': progress['created_at'],
+            'updated_at': progress['updated_at']
+        })
+    return jsonify(progress_list), 200

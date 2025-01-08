@@ -1,6 +1,7 @@
 # models/user.py
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
+import jwt  # Import JWT library
 from flask import current_app
 
 class User:
@@ -31,8 +32,23 @@ class User:
         user = current_app.db.users.find_one({"username": username})
 
         if user and user['password_hash'] == password_hash:
-            return True  # Credentials are valid
-        return False  # Invalid credentials
+            return user  # Return the user document if credentials are valid
+        return None  # Invalid credentials
+
+    @staticmethod
+    def generate_token(user_id, username):
+        """
+        Generate a JWT token for the user.
+        """
+        payload = {
+            'user_id': user_id,
+            'username': username,
+            'exp': datetime.utcnow() + timedelta(hours=24)  # Token expires in 24 hours
+        }
+        # Use a secret key from Flask's configuration
+        secret_key = current_app.config['SECRET_KEY']
+        token = jwt.encode(payload, secret_key, algorithm='HS256')
+        return token
 
     @staticmethod
     def get_user_by_id(user_id):
