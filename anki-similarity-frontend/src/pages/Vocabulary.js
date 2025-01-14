@@ -12,6 +12,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress, // Add CircularProgress for loading spinner
+  Snackbar, // Add Snackbar for success/error feedback
+  Alert, // Add Alert for Snackbar messages
 } from "@mui/material";
 import { useAuth } from "../AuthContext"; // Import useAuth
 import {
@@ -27,9 +30,21 @@ const Vocabulary = () => {
   const [newWord, setNewWord] = useState("");
   const [newMeaningEn, setNewMeaningEn] = useState("");
   const [newMeaningVi, setNewMeaningVi] = useState("");
+  const [ipaTranscription, setIpaTranscription] = useState("");
+  const [exampleSentences, setExampleSentences] = useState([]);
+  const [synonyms, setSynonyms] = useState([]);
+  const [antonyms, setAntonyms] = useState([]);
   const [editCard, setEditCard] = useState(null); // Card being edited
   const [openEditDialog, setOpenEditDialog] = useState(false); // Edit dialog state
   const { user } = useAuth(); // Get the authenticated user from context
+
+  // Loading state for generating fields
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Snackbar state for success/error feedback
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // "success" or "error"
 
   // Fetch vocabulary cards for the selected dataset
   useEffect(() => {
@@ -54,12 +69,22 @@ const Vocabulary = () => {
         datasetId,
         newWord,
         newMeaningEn,
-        newMeaningVi
+        newMeaningVi,
+        ipaTranscription,
+        exampleSentences,
+        [], // example_sentences_vi (optional)
+        "", // visual_image_url (optional)
+        "", // audio_url_word (optional)
+        "" // audio_url_example (optional)
       ); // Use external function
       setVocabularyCards([...vocabularyCards, newCard]);
       setNewWord("");
       setNewMeaningEn("");
       setNewMeaningVi("");
+      setIpaTranscription("");
+      setExampleSentences([]);
+      setSynonyms([]);
+      setAntonyms([]);
     } catch (error) {
       console.error("Error adding vocabulary card:", error);
     }
@@ -103,6 +128,60 @@ const Vocabulary = () => {
     }
   };
 
+  // Generate fields automatically
+  const handleGenerateFields = async () => {
+    if (!newWord) {
+      alert("Please enter a word first.");
+      return;
+    }
+
+    setIsGenerating(true); // Start loading
+
+    try {
+      const response = await fetch("/cards/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ word: newWord }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate fields");
+      }
+
+      const data = await response.json();
+      console.log("Generated Data:", data); // Log the data to verify
+
+      // Populate the form fields with the generated data
+      setNewMeaningEn(data.meaning_en || ""); // Update English meaning
+      setNewMeaningVi(data.meaning_vi || ""); // Update Vietnamese meaning
+      setIpaTranscription(data.ipa_transcription || "");
+      setSynonyms(data.synonyms || []);
+      setAntonyms(data.antonyms || []);
+      setExampleSentences(data.example_sentences_en || []);
+
+      // Show success feedback
+      setSnackbarMessage("Fields generated successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error generating fields:", error);
+
+      // Show error feedback
+      setSnackbarMessage("Failed to generate fields. Please try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsGenerating(false); // Stop loading
+    }
+  };
+
+  // Close the snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
+
   return (
     <Container>
       <Typography variant="h4" gutterBottom>
@@ -111,33 +190,91 @@ const Vocabulary = () => {
 
       {/* Add New Vocabulary Card Form */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
+        {/* Group 1: Vocabulary, IPA, Synonyms, Antonyms */}
+        <Grid item xs={12} container spacing={2}>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="New Word"
+              value={newWord}
+              onChange={(e) => setNewWord(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="IPA Transcription"
+              value={ipaTranscription}
+              onChange={(e) => setIpaTranscription(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Synonyms"
+              value={synonyms.join(", ")} // Display synonyms as a comma-separated string
+              onChange={(e) => setSynonyms(e.target.value.split(", "))}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Antonyms"
+              value={antonyms.join(", ")} // Display antonyms as a comma-separated string
+              onChange={(e) => setAntonyms(e.target.value.split(", "))}
+            />
+          </Grid>
+        </Grid>
+
+        {/* Group 2: Meaning (English) and Meaning (Vietnamese) */}
+        <Grid item xs={12} container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Meaning (English)"
+              value={newMeaningEn}
+              onChange={(e) => setNewMeaningEn(e.target.value)}
+              multiline
+              rows={4} // Increase rows for larger text input
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Meaning (Vietnamese)"
+              value={newMeaningVi}
+              onChange={(e) => setNewMeaningVi(e.target.value)}
+              multiline
+              rows={4} // Increase rows for larger text input
+            />
+          </Grid>
+        </Grid>
+
+        {/* Example Sentences */}
+        <Grid item xs={12}>
           <TextField
             fullWidth
-            label="New Word"
-            value={newWord}
-            onChange={(e) => setNewWord(e.target.value)}
+            label="Example Sentences"
+            value={exampleSentences.join("\n")} // Display example sentences as newline-separated text
+            onChange={(e) => setExampleSentences(e.target.value.split("\n"))}
+            multiline
+            rows={6} // Increase rows for larger text input
           />
         </Grid>
-        <Grid item xs={12} md={4}>
-          <TextField
-            fullWidth
-            label="Meaning (English)"
-            value={newMeaningEn}
-            onChange={(e) => setNewMeaningEn(e.target.value)}
-          />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <TextField
-            fullWidth
-            label="Meaning (Vietnamese)"
-            value={newMeaningVi}
-            onChange={(e) => setNewMeaningVi(e.target.value)}
-          />
-        </Grid>
+
+        {/* Buttons */}
         <Grid item xs={12}>
           <Button variant="contained" color="primary" onClick={handleAddCard}>
             Add Card
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleGenerateFields}
+            disabled={isGenerating} // Disable button while generating
+            sx={{ ml: 2 }}
+          >
+            {isGenerating ? <CircularProgress size={24} /> : "Generate Fields"}
           </Button>
         </Grid>
       </Grid>
@@ -150,10 +287,27 @@ const Vocabulary = () => {
               <CardContent>
                 <Typography variant="h6">{card.word}</Typography>
                 <Typography variant="body1">
+                  <strong>IPA:</strong> {card.ipa_transcription}
+                </Typography>
+                <Typography variant="body1">
                   <strong>English:</strong> {card.meaning_en}
                 </Typography>
                 <Typography variant="body1">
                   <strong>Vietnamese:</strong> {card.meaning_vi}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Synonyms:</strong> {card.synonyms?.join(", ")}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Antonyms:</strong> {card.antonyms?.join(", ")}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Example Sentences:</strong>
+                  <ul>
+                    {card.example_sentences_en?.map((sentence, index) => (
+                      <li key={index}>{sentence}</li>
+                    ))}
+                  </ul>
                 </Typography>
                 <Button
                   variant="outlined"
@@ -193,6 +347,8 @@ const Vocabulary = () => {
             onChange={(e) =>
               setEditCard({ ...editCard, meaning_en: e.target.value })
             }
+            multiline
+            rows={4} // Increase rows for larger text input
             sx={{ mb: 2 }}
           />
           <TextField
@@ -202,6 +358,8 @@ const Vocabulary = () => {
             onChange={(e) =>
               setEditCard({ ...editCard, meaning_vi: e.target.value })
             }
+            multiline
+            rows={4} // Increase rows for larger text input
           />
         </DialogContent>
         <DialogActions>
@@ -211,6 +369,21 @@ const Vocabulary = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for success/error feedback */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

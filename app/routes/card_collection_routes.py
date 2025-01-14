@@ -13,25 +13,23 @@ def create_card():
         user_id=data['user_id'],
         dataset_id=data['dataset_id'],
         word=data['word'],
-        meaning_en=data['meaning_en'],
-        meaning_vi=data['meaning_vi'],
-        ipa_transcription=data.get('ipa_transcription', ''),
-        example_sentences_en=data.get('example_sentences_en', []),
-        example_sentences_vi=data.get('example_sentences_vi', []),
-        visual_image_url=data.get('visual_image_url', ''),
-        audio_url_en=data.get('audio_url_en', ''),
-        audio_url_vi=data.get('audio_url_vi', '')
+        meaning_en=data.get('meaning_en'),  # Optional field
+        meaning_vi=data.get('meaning_vi'),  # Optional field
+        ipa_transcription=data.get('ipa_transcription', ''),  # Optional field
+        example_sentences_en=data.get('example_sentences_en', []),  # Optional field
+        example_sentences_vi=data.get('example_sentences_vi', []),  # Optional field
+        visual_image_url=data.get('visual_image_url', '')  # Optional field
     )
 
     # Return the created card's details, including its ID
     return json_util.dumps(new_card.__dict__), 201
+
 @vocab_bp.route('/cards/<card_id>', methods=['GET'])
 def get_card(card_id):
     card = VocabularyCard.get_card_by_id(card_id)
     if card:
         return json_util.dumps(card), 200
     return jsonify({"error": "Card not found"}), 404
-
 
 @vocab_bp.route('/cards/<card_id>', methods=['PUT'])
 def update_card(card_id):
@@ -54,7 +52,6 @@ def update_card(card_id):
 
     return jsonify({"message": "Card updated successfully"}), 200
 
-
 @vocab_bp.route('/cards/<card_id>', methods=['DELETE'])
 def delete_card(card_id):
     VocabularyCard.delete_card(card_id)
@@ -70,3 +67,35 @@ def get_dataset_cards(dataset_id):
     cards = VocabularyCard.get_cards_by_dataset(dataset_id)
     return jsonify(cards), 200
 
+@vocab_bp.route('/cards/generate', methods=['POST'])
+def generate_fields():
+    data = request.json
+    word = data.get('word')
+
+    if not word:
+        return jsonify({"error": "Word is required"}), 400
+
+    # Generate IPA transcription
+    ipa_transcription = VocabularyCard.get_ipa_transcription(word)
+
+    # Generate synonyms and antonyms
+    synonyms, antonyms = VocabularyCard.get_synonyms_antonyms(word)
+
+    # Generate example sentences
+    example_sentences_en = VocabularyCard.get_example_sentences(word)
+
+    # Generate English meaning
+    meaning_en = VocabularyCard.get_meaning_en(word)
+
+    # Generate Vietnamese meaning
+    meaning_vi = VocabularyCard.get_meaning_vi(word)
+
+    # Return the generated fields
+    return jsonify({
+        "ipa_transcription": ipa_transcription,
+        "synonyms": synonyms,
+        "antonyms": antonyms,
+        "example_sentences_en": example_sentences_en,
+        "meaning_en": meaning_en,
+        "meaning_vi": meaning_vi
+    }), 200
