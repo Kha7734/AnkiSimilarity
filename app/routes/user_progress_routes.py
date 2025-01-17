@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app  # Import current_app
 from bson import ObjectId
 from datetime import datetime
+from app.utils.decorators import login_required
 
 progress_bp = Blueprint('progress', __name__)
 
 @progress_bp.route('/api/progress', methods=['POST'])
+@login_required
 def create_progress():
     data = request.json
     user_id = data['user_id']
@@ -29,6 +31,7 @@ def create_progress():
     return jsonify({'message': 'Progress created successfully', 'progress_id': str(result.inserted_id)}), 201
 
 @progress_bp.route('/api/progress/<progress_id>', methods=['GET'])
+@login_required
 def get_progress(progress_id):
     progress = current_app.db.user_progress.find_one({"_id": ObjectId(progress_id)})  # Use current_app
     if progress:
@@ -49,6 +52,7 @@ def get_progress(progress_id):
     return jsonify({'message': 'Progress not found'}), 404
 
 @progress_bp.route('/api/progress/<progress_id>', methods=['PUT'])
+@login_required
 def update_progress(progress_id):
     data = request.json
     update_fields = {}
@@ -76,6 +80,7 @@ def update_progress(progress_id):
     return jsonify({'message': 'Progress not found'}), 404
 
 @progress_bp.route('/api/progress/<progress_id>', methods=['DELETE'])
+@login_required
 def delete_progress(progress_id):
     result = current_app.db.user_progress.delete_one({"_id": ObjectId(progress_id)})  # Use current_app
     if result.deleted_count > 0:
@@ -83,6 +88,7 @@ def delete_progress(progress_id):
     return jsonify({'message': 'Progress not found'}), 404
 
 @progress_bp.route('/api/progress/user/<user_id>', methods=['GET'])
+@login_required
 def get_progress_by_user(user_id):
     progress_entries = current_app.db.user_progress.find({"user_id": user_id})  # Fetch all progress entries for the user
     progress_list = []

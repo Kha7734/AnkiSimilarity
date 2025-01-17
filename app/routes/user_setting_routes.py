@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify, current_app  # Import current_app
 from bson import ObjectId
+from app.utils.decorators import login_required
 
 settings_bp = Blueprint('settings', __name__)
 
 @settings_bp.route('/settings', methods=['POST'])
+@login_required
 def create_settings():
     data = request.json
     user_id = data['user_id']
@@ -25,6 +27,7 @@ def create_settings():
     return jsonify({'message': 'Settings created successfully', 'settings_id': str(result.inserted_id)}), 201
 
 @settings_bp.route('/settings/<user_id>', methods=['GET'])
+@login_required
 def get_settings(user_id):
     settings = current_app.db.settings.find_one({"user_id": user_id})  # Use current_app
     if settings:
@@ -40,6 +43,7 @@ def get_settings(user_id):
     return jsonify({'message': 'Settings not found'}), 404
 
 @settings_bp.route('/settings/<user_id>', methods=['PUT'])
+@login_required
 def update_settings(user_id):
     data = request.json
     update_fields = {}
@@ -64,6 +68,7 @@ def update_settings(user_id):
     return jsonify({'message': 'Settings not found'}), 404
 
 @settings_bp.route('/settings/<user_id>', methods=['DELETE'])
+@login_required
 def delete_settings(user_id):
     result = current_app.db.settings.delete_one({"user_id": user_id})  # Use current_app
     if result.deleted_count > 0:

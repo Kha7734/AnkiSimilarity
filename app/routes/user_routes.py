@@ -4,6 +4,8 @@ import jwt
 from datetime import datetime, timedelta
 from app.models.user import User
 import hashlib
+from app.utils.decorators import login_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 user_bp = Blueprint('user', __name__)
 
@@ -89,6 +91,7 @@ def get_user(user_id):
 
 
 @user_bp.route('/user/<user_id>', methods=['PUT'])
+@login_required
 def update_user(user_id):
     data = request.json
     update_fields = {}
@@ -103,6 +106,7 @@ def update_user(user_id):
 
 
 @user_bp.route('/user/<user_id>', methods=['DELETE'])
+@login_required
 def delete_user(user_id):
     User.delete_user(user_id)
     return jsonify({'message': 'User deleted successfully'}), 200
